@@ -59,3 +59,26 @@ class Classifier(BaseEstimator):
         s_y_pred = pd.Series(y_pred[:, 1])
         s_y_pred_smoothed = s_y_pred.rolling(65, min_periods=0, center=True).quantile(0.65)
         return np.array(list(zip(1.-s_y_pred_smoothed[:],s_y_pred_smoothed[:])))
+    
+##############################@
+from __future__ import division
+from sklearn.base import BaseEstimator
+from lightgbm import LGBMClassifier
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import GridSearchCV
+class Classifier(BaseEstimator):
+    def __init__(self):
+        cv_params = {'max_depth': [5, 7, 9], 'num_leaves': [5, 8, 11], 'learning_rate': [0.05, 0.09, 0.11]}
+        ind_params = {'n_estimators': 100, 'subsample': 0.5, 'colsample_bytree': 0.6, 'objective': 'binary'}
+        optimized_GBM = GridSearchCV(LGBMClassifier(**ind_params), cv_params, scoring = 'balanced_accuracy', cv = 5, n_jobs = -1)
+        self.model = optimized_GBM
+    def fit(self, X, y):
+        print("\nentered fitting ...")
+        self.model.fit(X, y)
+        print("finished fitting ...")
+    def predict_proba(self, X):
+        yres = self.model.predict_proba(X)
+        s_y_pred = pd.Series(yres[:, 1])
+        s_y_pred_smoothed = s_y_pred.rolling(80, min_periods=0, center=True).quantile(0.6)
+        return np.array(list(zip(1-s_y_pred_smoothed[:],s_y_pred_smoothed[:])))
